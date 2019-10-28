@@ -16,8 +16,7 @@ int sensorReading;
 int numbersServo[3] = {30, 90, 160};
 
 
-int distance[16] = {10, 30, 50, 70, 90, 110, 130, 150, 170, 190, 210, 230, 250, 270, 290, 5000};
-int delayDistance[16] = {0, 250, 500, 1000, 1500, 2000, 2500, 2500, 2500, 2500, 2500, 2500, 2500, 2500, 2500, 2500};
+int distance[100] = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 180, 190, 200, 210, 220, 230 ,240, 250, 260, 270, 280, 290, 300, 310, 320, 330 ,340, 350, 360, 370, 380, 390, 400, 410, 420, 430 ,440, 450, 460, 470, 480, 490, 500, 510, 520, 530 ,540, 550, 560, 570, 580, 590, 600, 610, 620, 630 ,640, 650, 660, 670, 680, 690, 700, 710, 720, 730 ,740, 750, 760, 770, 780, 790, 800, 810, 820, 830 , 840, 850, 860, 870, 880, 890, 900, 910, 920, 930 ,940, 950, 960, 970, 980, 990, 1000};
 
 int defaultDelay = 1000;
 int whereIsEyes;
@@ -42,6 +41,10 @@ int enB = 3;
 int in3 = 26;
 int in4 = 2;
 
+boolean isStatus=true;
+
+int whatDistanceIsBack=0;
+int whatDistanceIs=0;
 
 void setup() {
 
@@ -82,18 +85,29 @@ void setup() {
   lcd.print(" By:Fabkius ");
   delay(2000); 
   lcd.clear();
-  
+
   whereIsEyes = getDirection();
-  
+   
 }
 
 void loop() {
 
 getLaser();
-int whatDistanceIs = getSonar1();
 
-int whatDistanceIsBack = getSonarBack();
+setScreenData(whatDistanceIs,whatDistanceIsBack);
 
+
+ while(whatDistanceIs<20){
+   whereIsEyes = getDirection();
+   whatDistanceIs = getSonar1();
+   delay(500);
+
+   if(whatDistanceIs<20){
+     motorDown();
+     delay(500);
+   }
+ }
+   
 
 Serial.println("whatDistanceIs:");
 Serial.println(whatDistanceIs);
@@ -101,98 +115,89 @@ Serial.println(whatDistanceIs);
 Serial.println("whatDistanceIsBack:");
 Serial.println(whatDistanceIsBack);
 
-if(whatDistanceIsBack<=10){
+
+  if(whereIsEyes==30){
+    //derecha
+    motorDown();
+    delay(500);
+    motorRigh();
+    delay(500);
+    setDirection(90);
+    delay(500);
+    motorUp();
+    delay(getFrontDelay());
+  }
+
+  if(whereIsEyes==90){
+    motorUp();
+    delay(getFrontDelay());
+  }
+
+   if(whereIsEyes==160){
+    //izquierda
+    motorDown();
+    delay(500);
+    motorLeft();
+    delay(500);
+    setDirection(90);
+    delay(500);
+    motorUp();
+    delay(getFrontDelay());
+   }
+  
+motorStop();
+
+if(whatDistanceIs<20){
+  motorDown();
+  delay(500);
+  while(whatDistanceIs<20){
+      whereIsEyes = getDirection();
+      whatDistanceIs = getSonar1();
+      delay(250);
+  }
+  
+  
+}
+motorStop();
+
+
+while(whatDistanceIsBack<20){
   motorUp();
   delay(500);
-  motorStop();
+  whatDistanceIsBack = getSonarBack();
+  delay(250);
 }
-
-setScreenData(whereIsEyes,0);
-setScreenData(whatDistanceIs,1);
-delay(500);
-
-int aux=0;
-
-for(int i=0; i<16;i++){
-
-   if(whatDistanceIs<=20){
-     motorDown();
-     delay(500);
-     motorStop();
-     whereIsEyes = getDirection();
-   }
-    
-   if(aux < whatDistanceIs && whatDistanceIs < distance[i]){
-
-      setScreenData(delayDistance[i],2);
-
-      if(whereIsEyes==30){
-        //derecha
-        motorRigh();
-        delay(500);
-
-        //regresa ojos al centro
-        setDirection(90);
-        
-        motorUp();
-        delay(delayDistance[i]);
-        motorStop();
-        whereIsEyes = getDirection();
-        delay(defaultDelay);
-        break;
-      }
-
-      if(whereIsEyes==90){
-        //centro
-        motorUp();
-        delay(delayDistance[i]);
-        motorStop();
-        whereIsEyes = getDirection();
-        delay(defaultDelay);
-        break;
-      }
-
-      if(whereIsEyes==160){
-        //izquierda
-        motorLeft();
-        delay(500);
-
-        //regresa ojos al centro
-        setDirection(90);
-        
-        motorUp();
-        delay(delayDistance[i]);
-        motorStop();
-        whereIsEyes = getDirection();
-        delay(defaultDelay);
-        break;
-      }
-      
-   }
-      
-   aux = distance[i];
-
-}
+motorStop();
 
 lcd.clear();
 
-
-
 }
 
-void setScreenData(int data, int line){
-  lcd.setCursor(0,line);
-  if(line==0){
-    lcd.print("Direc: ");
-    lcd.print(data);
-  }else if(line==1){
-    lcd.print("Dista: ");
-    lcd.print(data);
-  }else{
-    lcd.setCursor(0,0);
-    lcd.print("Delay: ");
-    lcd.print(data);
+int getFrontDelay(){
+
+  for(int i=0; i<=sizeof(distance);i++){
+   whatDistanceIs = getSonar1();
+
+    if(whatDistanceIs > distance[i]){
+      return whatDistanceIs*8;
+    }
+
+    if(i==100){
+      whereIsEyes = getDirection();
+    }
+  
   }
+  return 1000;
+}
+
+void setScreenData(int data1, int data2){
+    lcd.setCursor(0,0);
+    lcd.print("   UP: ");
+    lcd.print(data1);
+
+    lcd.setCursor(0, 1);
+    lcd.print("   AT: ");
+    lcd.print(data2);
 }
 
 
@@ -261,18 +266,19 @@ void motorLeft(){
   digitalWrite(in4, LOW);
 }
 
-void motorUp()
-{
+void motorUp(){
   // Set motors to maximum speed
   // For PWM maximum possible values are 0 to 255
+
   analogWrite(enA, 255);
   analogWrite(enB, 255);
-
+  
   // Turn on motor A & B
   digitalWrite(in1, HIGH);
   digitalWrite(in2, LOW);
   digitalWrite(in3, HIGH);
   digitalWrite(in4, LOW);
+  
 }
 
 void motorDown()
@@ -300,12 +306,13 @@ void motorStop(){
 int getAleatoryDelay(){
   return random(2000, 7000);
 }
+
 void getLaser(){
   sensorReading=analogRead(15); //Instrucción para obtener dato analógico
-  if(sensorReading<1){
+  if(sensorReading<2){
    digitalWrite(6,HIGH);
   }else{ 
    digitalWrite(6,LOW);
   }
-  Serial.println(sensorReading); 
+  //Serial.println(sensorReading); 
 }
